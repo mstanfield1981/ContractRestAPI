@@ -1,0 +1,40 @@
+﻿using System.Web.Http;
+using ContractRestAPI.Models;
+
+namespace ContractRestAPI.Controllers
+{
+    public class ContractsController : ApiController
+    {
+        public ContractResponse Get()
+        {
+            RestAPITools apiTools = new RestAPITools();
+
+            return apiTools.findContracts();
+        }
+        public ContractResponse Get(int id)
+        {
+
+            RestAPITools apiTools = new RestAPITools();
+
+            return apiTools.findContracts(id);
+        }
+        public ContractInsertResponse Post(ContractRequest _request)
+        {
+            RestAPITools apiTools = new RestAPITools();
+
+            return apiTools.createContract(_request);
+        }
+        public ContractUpdateResponse Put(ContractRequest _request)
+        {
+            RestAPITools apiTools = new RestAPITools();
+
+            return apiTools.updateContract(_request);
+        }
+        public ContractDeleteResponse Delete(int id)
+        {
+            RestAPITools apiTools = new RestAPITools();
+
+            return apiTools.deleteContract(id);
+        }
+    }
+}
