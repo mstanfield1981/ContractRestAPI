@@ -12,7 +12,6 @@ namespace ContractRestAPI.Models
     {
         public ContractResponse findContracts()
         {
-            //Test
             List<Contract> contracts;
 
             using (var conn = createConnection())
