@@ -16,7 +16,17 @@ namespace ContractRestAPI.Models
 
             using (var conn = createConnection())
             {
-                contracts = parseResults(executeSQLStatement(new SQLStatements().selectApprovedContracts(), conn));
+                try
+                {
+                    contracts = parseResults(executeSQLStatement(new SQLStatements().selectApprovedContracts(), conn));
+                }
+                catch (Exception e)
+                {
+                    var resp = new HttpResponseMessage(HttpStatusCode.NotFound);
+                    resp.Content = new StringContent(e.Message);
+
+                    throw new HttpResponseException(resp);
+                }
             }
 
             return new ContractResponse { contracts = contracts };
@@ -27,16 +37,24 @@ namespace ContractRestAPI.Models
 
             using (var conn = createConnection())
             {
-                contracts = parseResults(executeSQLStatement(new SQLStatements().selectSingleContract(_contractId), conn));
+                try
+                {
+                    contracts = parseResults(executeSQLStatement(new SQLStatements().selectSingleContract(_contractId), conn));
+                }
+                catch (Exception e)
+                {
+                    var resp = new HttpResponseMessage(HttpStatusCode.NotFound);
+                    resp.Content = new StringContent(e.Message);
+
+                    throw new HttpResponseException(resp);
+                }
             }
 
             return new ContractResponse { contracts = contracts };
         }
         public ContractInsertResponse createContract(ContractRequest _request)
         {
-            Contract contract = new Contract();
             ContractInsertResponse response = new ContractInsertResponse();
-            List<Contract> returnResults = new List<Contract>();
 
             using (var conn = createConnection())
             {
@@ -46,7 +64,6 @@ namespace ContractRestAPI.Models
                 {
                     try
                     {
-
                         cmd.Connection = conn;
                         SQLStatements sqlStatements = new SQLStatements();
                         cmd.CommandText = sqlStatements.insertSqlStatement(_request);
@@ -57,7 +74,7 @@ namespace ContractRestAPI.Models
                     }
                     catch (Exception e)
                     {
-                        var resp = new HttpResponseMessage(HttpStatusCode.NotFound);
+                        var resp = new HttpResponseMessage(HttpStatusCode.Conflict);
                         resp.Content = new StringContent(String.Format("Error inserting contract. {0}", e.Message));
                         
                         throw new HttpResponseException(resp);
@@ -68,9 +85,7 @@ namespace ContractRestAPI.Models
         }
         public ContractUpdateResponse updateContract(ContractRequest _request)
         {
-            Contract contract = new Contract();
             ContractUpdateResponse response = new ContractUpdateResponse();
-            List<Contract> contracts = new List<Contract>();
 
             using (var conn = createConnection())
             {
@@ -82,14 +97,14 @@ namespace ContractRestAPI.Models
                     using (var reader = cmd.ExecuteReader())
                     {
                         response = validateUpdate(reader, _request.Id);
+
                         response.originalRequest = _request;
                     }
-
                 }
                 catch (Exception e)
                 {
                     var resp = new HttpResponseMessage(HttpStatusCode.BadRequest);
-                    resp.Content = new StringContent("Error updating contract.");
+                    resp.Content = new StringContent(e.Message);
 
                     throw new HttpResponseException(resp);
                 }
@@ -103,11 +118,20 @@ namespace ContractRestAPI.Models
 
             using (var conn = createConnection())
             {
-                conn.Open();
-                using (var cmd = new NpgsqlCommand(new SQLStatements().deleteContract(id), conn))
-                using (var reader = cmd.ExecuteReader())
+                try
                 {
-                    response = validateDelete(reader, id);
+                    conn.Open();
+                    using (var cmd = new NpgsqlCommand(new SQLStatements().deleteContract(id), conn))
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        response = validateDelete(reader, id);
+                    }
+                }
+                catch (Exception e)
+                {
+                    var resp = new HttpResponseMessage(HttpStatusCode.BadRequest);
+                    resp.Content = new StringContent(e.Message);
+                    throw new HttpResponseException(resp);
                 }
             }
 
@@ -141,7 +165,7 @@ namespace ContractRestAPI.Models
             if (reader.HasRows)
             {
                 response.updateSuccessful = true;
-                response.updateMessage = String.Format("Contract Id {0} updated.", contractId);
+               
 
             }
             else
@@ -162,7 +186,6 @@ namespace ContractRestAPI.Models
             {
                 response.deleteSuccessful = true;
                 response.deleteMessage = String.Format("Contract Id {0} deleted.", contractId);
-
             }
             else
             {
